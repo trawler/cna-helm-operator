@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cna-operator
+subjects:
+- kind: ServiceAccount
+  name: cna-operator
+roleRef:
+  kind: Role
+  name: cna-operator
+  apiGroup: rbac.authorization.k8s.io
