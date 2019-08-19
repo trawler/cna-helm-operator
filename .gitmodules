@@ -1,0 +1,3 @@
+[submodule "argo-helm"]
+	path = helm-charts/argo-helm
+	url = git@github.com:argoproj/argo-helm.git
