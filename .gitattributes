@@ -1,6 +1,6 @@
 # Files that are going to be encrypted
 
-overrides.yaml filter=git-crypt diff=git-crypt
+cna_v1alpha1_argocd_cr.yaml filter=git-crypt diff=git-crypt
 
 
 # Making sure that .gitattributes is never encrypted. DON'T TOUCH THAT LINE AND ONE BELOW
