@@ -1,0 +1,159 @@
+apiVersion: cna.mirantis.com/v1alpha1
+kind: Argocd
+metadata:
+  name: example-argocd
+spec:
+  applicationController:
+    containerPort: 8082
+    servicePort: 8082
+    image:
+      repository: argoproj/argocd
+      tag: v1.1.2
+      pullPolicy: Always
+    volumeMounts: []
+    volumes:
+      - name: known-hosts
+        configMap:
+          name: argocd-known-hosts
+
+  server:
+    containerPort: 8080
+    servicePortHttp: 80
+    servicePortHttps: 443
+    serviceAnnotations: {}
+    image:
+      repository: argoproj/argocd
+      tag: v1.1.2
+      pullPolicy: Always
+    uiInitImage:
+      repository: argoproj/argocd-ui
+      tag: v1.1.2
+      pullPolicy: Always
+    extraArgs: []
+    volumeMounts: []
+    volumes: []
+    annotations: {}
+
+  repoServer:
+    containerPort: 8081
+    servicePort: 8081
+    image:
+      repository: argoproj/argocd
+      tag: v1.1.2
+      pullPolicy: Always
+    volumeMounts: []
+    volumes: []
+
+  dexServer:
+    containerPortHttp: 5556
+    containerPortGrpc: 5557
+    servicePortHttp: 5556
+    servicePortGrpc: 5557
+    image:
+      repository: quay.io/dexidp/dex
+      tag: v2.14.0
+      pullPolicy: Always
+    initImage:
+      repository: argoproj/argocd
+      tag: v1.1.2
+      pullPolicy: Always
+    volumeMounts: []
+    volumes: []
+
+  # terminate tls at ArgoCD level
+  ingress:
+    enabled: false
+    annotations:
+      {}
+      # kubernetes.io/ingress.class: nginx
+      # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      # nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    path: /
+    hosts:
+      - argocd.example.com
+
+  # Standard Argo CD installation with cluster-admin access.
+  # Set this true if you plan to use Argo CD to deploy applications in the same cluster that
+  #     Argo CD runs in (i.e. kubernetes.svc.default).
+  # Will still be able to deploy to external clusters with inputted credentials.
+
+  clusterAdminAccess:
+    enabled: true
+  
+  # The below secrets should be encrypted in base64
+  config:
+    admin:
+      password: ADMIN_PASSWORD
+      passwordMtime: PASSWORD_TIMESTAMP
+    server:
+      secretkey: SEREVER_KEY
+    tls:
+      crt: >-
+        CERTIFICATE FILE
+      key: >-
+        PRIVATE_KEY
+
+    helmRepositories:
+      - name: jetstack
+        url: https://charts.jetstack.io
+      - name: argo
+        url: https://argoproj.github.io/argo-helm
+      - name: pbrit-argo
+        url: https://pbrit.github.io/argo-helm
+      - name: gitlab
+        url: https://charts.gitlab.io
+      - name: harbor
+        url: https://helm.goharbor.io
+      - name: magma
+        url: https://harbor.k8srnd.mirantis.tech/chartrepo/magma
+      - name: ambassador
+        url: https://kubernetes-charts.storage.googleapis.com
+    repositories:
+      - url: git@github.com:example/example-repo.git
+        sshPrivateKeySecret:
+          key: sshPrivateKey
+          name: example-repo-ssh
+        insecureIgnoreHostKey: yes
+        insecureIgnoreHostKey: yes
+    dexConfig:
+      connectors:
+        - type: oidc
+          id: google
+          name: Google
+          config:
+            issuer: etc... etc...
+            clientID: CLIENT_ID
+            clientSecret: CLIENT_SECRET
+            redirectURI: REDIRECT_URI
+    url: # https://argocd.example.com/
+    oidcConfig:
+    webhook:
+      githubSecret:
+      gitlabSecret:
+      bitbucketSecret:
+    resourceCustomizations:
+      admissionregistration.k8s.io/MutatingWebhookConfiguration:
+        ignoreDifferences: |
+          jsonPointers:
+          - /webhooks/0/clientConfig/caBundle
+    configManagementPlugins:
+  rbac:
+    policyCsv: #|
+    #   p, role:org-admin, applications, *, */*, allow
+    #   p, role:org-admin, clusters, get, *, allow
+    #   p, role:org-admin, repositories, get, *, allow
+    #   p, role:org-admin, repositories, create, *, allow
+    #   p, role:org-admin, repositories, update, *, allow
+    #   p, role:org-admin, repositories, delete, *, allow
+    #   g, your-github-org:your-team, role:org-admin
+    # The default role Argo CD will fall back to, when authorizing API requests
+    policyDefault: role:admin
+    scopes: #[groups]
+
+  redis:
+    image:
+      repository: redis
+      tag: 5.0.3
+      pullPolicy: Always
+    containerPort: 6379
+    servicePort: 6379
